@@ -7,6 +7,8 @@ import top.mowang.common.User;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -21,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MoChatServer {
     private ServerSocket serverSocket = null;
     //ConcurrentHashMap线程安全
-    private static ConcurrentHashMap<String, User> userData = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<String, User> userData = new ConcurrentHashMap<>();
     private static Properties properties = new Properties();
     static {
         //静态代码启动服务的时候从dat文件里面初始化用户信息
@@ -45,10 +47,6 @@ public class MoChatServer {
                 e.printStackTrace();
             }
         }
-    }
-
-    public static void main(String[] args) {
-        new MoChatServer();
     }
 
     /**
@@ -110,11 +108,10 @@ public class MoChatServer {
                 ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
                 Message actionMessage = (Message) inputStream.readObject();
                 User user = (User) inputStream.readObject();
-                System.out.println(user.getUserName() + "和服务端连接成功");
                 Message message = new Message();
                 if (actionMessage.getMessageType().equals(MessageType.MESSAGE_LOGIN)) {
                     //如果客户端需要登录
-                    if (checkUser(user)) {
+                    if (checkUser(user) && ManageServerThread.hashMap.get(user.getUserName()) == null) {
                         //登录成功
                         System.out.println(user.getUserName() + "登录成功");
                         message.setMessageType(MessageType.MESSAGE_LOGIN_SUCCEED);
@@ -129,6 +126,9 @@ public class MoChatServer {
                     } else {
                         //登录失败
                         message.setMessageType(MessageType.MESSAGE_LOGIN_FAIL);
+                        message.setContent("用户名密码错误或"+user.getUserName()+"用户已经登录");
+                        message.setSender("服务器");
+                        message.setSendTime(new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date()));
                         objectOutputStream.writeObject(message);
                         objectOutputStream.flush();
                         //登录失败需要关闭socket

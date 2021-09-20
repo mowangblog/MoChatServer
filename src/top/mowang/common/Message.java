@@ -55,9 +55,6 @@ public class Message implements Serializable {
         return content;
     }
 
-    public Message() {
-    }
-
     public void setContent(String content) {
         this.content = content;
     }
@@ -78,11 +75,19 @@ public class Message implements Serializable {
         this.messageType = messageType;
     }
 
+    public Message() {
+    }
+
     public Message(String sender, String receiver, String content, String sendTime, String messageType) {
         this.sender = sender;
         this.receiver = receiver;
         this.content = content;
         this.sendTime = sendTime;
         this.messageType = messageType;
+    }
+
+    @Override
+    public String toString() {
+        return "收到一个消息，发送者:"+sender+"，发送时间："+sendTime+"，内容："+content;
     }
 }

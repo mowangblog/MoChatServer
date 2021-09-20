@@ -13,7 +13,7 @@ public class ManageServerThread {
     /**
      * 把线程放入hashmap里面存储,key是用户名，value是通信的线程
      */
-    private static HashMap<String, ServerConnectClientThread> hashMap = new HashMap<>();
+    public static HashMap<String, ServerConnectClientThread> hashMap = new HashMap<>();
 
     /**
      * 把线程放入hashmap集合中
@@ -33,4 +33,7 @@ public class ManageServerThread {
         return hashMap.get(key);
     }
 
+    public static void removeConnectClientThread(String userName){
+        hashMap.remove(userName);
+    }
 }
