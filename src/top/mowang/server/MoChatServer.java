@@ -3,6 +3,7 @@ package top.mowang.server;
 import top.mowang.common.Message;
 import top.mowang.common.MessageType;
 import top.mowang.common.User;
+import top.mowang.utils.Utility;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -42,7 +43,7 @@ public class MoChatServer {
                     User user = (User) inputStream.readObject();
                     userData.put(user.getUserName(),user);
                 }
-                System.out.println("已从dat文件中恢复"+num+"个用户");
+                System.out.println("从dat文件中恢复了"+num+"个用户");
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -97,6 +98,8 @@ public class MoChatServer {
 
     public MoChatServer() {
         System.out.println("服务端在9999端口监听");
+        ServerNotifyAllThread serverNotifyAllThread = new ServerNotifyAllThread();
+        serverNotifyAllThread.start();
         try {
             //从Properties配置文件里读取端口号
             String port = (String) properties.get("port");
@@ -128,7 +131,7 @@ public class MoChatServer {
                         message.setMessageType(MessageType.MESSAGE_LOGIN_FAIL);
                         message.setContent("用户名密码错误或"+user.getUserName()+"用户已经登录");
                         message.setSender("服务器");
-                        message.setSendTime(new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date()));
+                        message.setSendTime(Utility.getTime());
                         objectOutputStream.writeObject(message);
                         objectOutputStream.flush();
                         //登录失败需要关闭socket

@@ -35,6 +35,19 @@ public class Message implements Serializable {
      */
     private String messageType;
 
+    /**
+     * 文件字节数组
+     */
+    private byte[] bytes;
+
+    public byte[] getBytes() {
+        return bytes;
+    }
+
+    public void setBytes(byte[] bytes) {
+        this.bytes = bytes;
+    }
+
     public String getSender() {
         return sender;
     }
