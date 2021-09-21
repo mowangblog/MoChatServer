@@ -10,7 +10,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * MoChatClient
@@ -108,25 +110,56 @@ public class ServerConnectClientThread extends Thread {
         }
     }
 
+    public void returnMessage(Message message, String content) {
+        message.setReceiver(message.getSender());
+        message.setSender("服务器");
+        message.setContent(content);
+        message.setSendTime(Utility.getTime());
+        message.setMessageType(MessageType.MESSAGE_COMMON_SERVER_MES);
+        try {
+            ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
+            outputStream.writeObject(message);
+            outputStream.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * 用户私聊
      *
      * @param message
      */
     public void privateMessage(Message message) {
-        //如果要发送的用户不在线或不存在
+        Message newMessage = new Message();
+        newMessage.setReceiver(message.getSender());
+        //如果要发送的用户不存在
+        if (MoChatServer.userData.get(message.getReceiver()) == null) {
+            returnMessage(newMessage,"发送失败，当前用户不存在");
+            return;
+        }
+        //如果要发送的用户不在线
         if (ManageServerThread.hashMap.get(message.getReceiver()) == null) {
-            message.setReceiver(message.getSender());
-            message.setSender("服务器");
-            message.setContent("发送失败，用户不在线或不存在");
-            message.setMessageType(MessageType.MESSAGE_COMMON_SERVER_MES);
-            try {
-                ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
-                outputStream.writeObject(message);
-                outputStream.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
+            ConcurrentHashMap<String, ArrayList<Message>> offline = MoChatServer.offlineMessage;
+            //有字节数组是文件类型
+            if(message.getBytes() != null){
+                //类型离线文件
+                message.setMessageType(MessageType.MESSAGE_FILE_OFFLINE_MES);
+            }else {
+                //类型离线消息
+                message.setMessageType(MessageType.MESSAGE_OFFLINE_MES);
             }
+            //如果已经有离线消息集合
+            if(offline.get(message.getReceiver()) != null){
+                ArrayList<Message> messages = offline.get(message.getSender());
+                messages.add(message);
+            }else {
+                ArrayList<Message> messages = new ArrayList<>();
+                messages.add(message);
+                offline.put(message.getReceiver(),messages);
+            }
+
+            returnMessage(newMessage,"该用户当前不在线，将在该用户上线时发送");
             return;
         }
         //拿到接收者的连接

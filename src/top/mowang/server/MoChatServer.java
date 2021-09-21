@@ -8,8 +8,8 @@ import top.mowang.utils.Utility;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,6 +25,7 @@ public class MoChatServer {
     private ServerSocket serverSocket = null;
     //ConcurrentHashMap线程安全
     public static ConcurrentHashMap<String, User> userData = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<String, ArrayList<Message>> offlineMessage = new ConcurrentHashMap<>();
     private static Properties properties = new Properties();
     static {
         //静态代码启动服务的时候从dat文件里面初始化用户信息
@@ -126,6 +127,8 @@ public class MoChatServer {
                         serverConnectClientThread.start();
                         //把线程放入集合中进行管理
                         ManageServerThread.addClientConnectServerThread(user.getUserName(), serverConnectClientThread);
+                        //如果有则发送离线消息
+                        offlineMessageSend(user.getUserName());
                     } else {
                         //登录失败
                         message.setMessageType(MessageType.MESSAGE_LOGIN_FAIL);
@@ -175,6 +178,26 @@ public class MoChatServer {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    private void offlineMessageSend(String userName) {
+        if(offlineMessage.get(userName) != null){
+            ArrayList<Message> messages = offlineMessage.get(userName);
+            //发离线消息发送过去
+            for (Message message : messages) {
+                //拿到接收者的连接
+                try {
+                    Socket newSocket = ManageServerThread.getClientConnectServerThread(
+                            userName).getSocket();
+                    ObjectOutputStream outputStream = new ObjectOutputStream(newSocket.getOutputStream());
+                    outputStream.writeObject(message);
+                    outputStream.flush();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            offlineMessage.remove(userName);
         }
     }
 }
